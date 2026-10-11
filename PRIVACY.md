@@ -14,7 +14,8 @@ Public API methods, verified TLS, PKCE, token refresh and retry behavior are unc
 OAuth requests use HTTPX with TLS verification and scoped cookie transfer back
 to the caller's aiohttp session. Cookie domain, path and Secure attributes are
 preserved across redirects. Transport errors omit private URLs and nested errors.
-API requests remain on aiohttp. A live login confirmed two active billing accounts.
+HTTPX/httpcore URL and header logging is suppressed only in the OAuth request
+context; unrelated integrations retain their logging. API requests remain on aiohttp. A live login confirmed two active billing accounts.
 The consumer OAuth client/policy and form request format now match the public
 myaccount.nationalgrid.com portal observed on 2026-10-11. The old UWP policy
 returned a B2C exception before credential validation. Requests use the form
@@ -26,6 +27,6 @@ Tests: run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p pytest_asyncio.
 -p pytest_cov.plugin`. The privacy tests exercise redirect codes, backend errors,
 configuration repr and error summaries with synthetic sensitive values.
 
-Build with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PY_NATIONALGRID=0.6.6.post4 python
+Build with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PY_NATIONALGRID=0.6.6.post5 python
 -m build --wheel`. The GitHub release wheel is pinned by URL and SHA-256 in the
 Home Assistant integration fork. Updates require a new reviewed release and hash.

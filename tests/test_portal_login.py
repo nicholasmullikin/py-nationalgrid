@@ -1,5 +1,6 @@
 """Match the consumer portal's observed October 2026 OAuth form requests."""
 
+import logging
 from unittest.mock import AsyncMock, patch
 
 import aiohttp
@@ -153,3 +154,30 @@ async def test_transport_failure_does_not_expose_private_url_or_nested_error(cap
     assert "synthetic-private-token" not in str(caught.value)
     assert "synthetic-private-token" not in caplog.text
     assert caught.value.__suppress_context__
+
+
+@pytest.mark.asyncio
+async def test_oauth_hides_third_party_logs_without_hiding_unrelated_requests(caplog):
+    caplog.set_level(logging.DEBUG)
+    secret = "synthetic-private-auth-token"
+    real_client = httpx.AsyncClient
+    # This logger exists when a real AsyncClient constructs its httpcore transport.
+    core_logger = logging.getLogger("httpcore.http11")
+
+    def handle(request):
+        core_logger.debug("received private Location/cookie: %s", secret)
+        return httpx.Response(200, text="completed")
+
+    def client(**kwargs):
+        return real_client(**kwargs, transport=httpx.MockTransport(handle))
+
+    async with aiohttp.ClientSession() as session:
+        with patch("py_nationalgrid.oidchelper.httpx.AsyncClient", side_effect=client):
+            await _fetch(session, f"https://login.example/?code={secret}", 30)
+    assert secret not in caplog.text
+    assert not any(r.name.startswith(("httpx", "httpcore")) for r in caplog.records)
+    core_logger.debug("unrelated transport operation")
+    async with real_client(transport=httpx.MockTransport(lambda r: httpx.Response(200))) as public:
+        await public.get("https://public.example/allowed")
+    assert "unrelated transport operation" in caplog.text
+    assert "https://public.example/allowed" in caplog.text

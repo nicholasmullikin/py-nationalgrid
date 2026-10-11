@@ -8,6 +8,7 @@ import logging
 import re
 import secrets
 import ssl
+from contextvars import ContextVar
 from http.cookiejar import Cookie
 from http.cookies import SimpleCookie
 from typing import Any, TypedDict
@@ -23,6 +24,28 @@ from .exceptions import CannotConnectError, InvalidAuthError
 from .helpers import create_cookie_jar
 
 logger = logging.getLogger(__name__)
+
+_auth_transport_logging: ContextVar[bool] = ContextVar("nationalgrid_auth_transport", default=False)
+
+
+class _AuthTransportLogFilter(logging.Filter):
+    """Suppress third-party URL/header logs only in this OAuth request's task."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not _auth_transport_logging.get()
+
+
+_transport_log_filter = _AuthTransportLogFilter()
+
+
+def _protect_transport_logs() -> None:
+    # AsyncClient construction imports httpcore's transport loggers.
+    for name in tuple(logging.Logger.manager.loggerDict):
+        if name == "httpx" or name == "httpcore" or name.startswith("httpcore."):
+            transport_logger = logging.getLogger(name)
+            if _transport_log_filter not in transport_logger.filters:
+                transport_logger.addFilter(_transport_log_filter)
+
 
 # Module-level cache so the JWKS signing keys are fetched once and reused across
 # logins rather than making a fresh HTTPS round-trip on every authentication call.
@@ -488,22 +511,28 @@ async def _fetch(
             )
         )
     try:
-        async with httpx.AsyncClient(
+        client = httpx.AsyncClient(
             cookies=cookies,
             timeout=timeout,
             follow_redirects=follow_redirects,
             verify=True,
             trust_env=False,
-        ) as client:
-            response = await client.request(method, url, **kwargs)
-            # Include redirect responses so B2C's SSO cookies remain available.
-            for hop in (*response.history, response):
-                for value in hop.headers.get_list("set-cookie"):
-                    updated = SimpleCookie()
-                    updated.load(value)
-                    session.cookie_jar.update_cookies(updated, URL(str(hop.url)))
-            logger.debug("Authentication request completed. Status: %s", response.status_code)
-            return response.text, str(response.url), response.status_code
+        )
+        _protect_transport_logs()
+        log_token = _auth_transport_logging.set(True)
+        try:
+            async with client:
+                response = await client.request(method, url, **kwargs)
+                # Include redirect responses so B2C's SSO cookies remain available.
+                for hop in (*response.history, response):
+                    for value in hop.headers.get_list("set-cookie"):
+                        updated = SimpleCookie()
+                        updated.load(value)
+                        session.cookie_jar.update_cookies(updated, URL(str(hop.url)))
+                logger.debug("Authentication request completed. Status: %s", response.status_code)
+                return response.text, str(response.url), response.status_code
+        finally:
+            _auth_transport_logging.reset(log_token)
     except (TimeoutError, httpx.HTTPError):
         logger.error("Authentication network error")
         raise CannotConnectError("Authentication network error") from None
