@@ -350,8 +350,8 @@ async def test_graphql_errors_logged_safely(caplog: pytest.LogCaptureFixture) ->
 
     # Error codes and count should be in warning
     assert "2 error(s)" in warning_message
-    assert "ACCOUNT_NOT_FOUND" in warning_message
-    assert "FORBIDDEN" in warning_message
+    assert "[redacted]" in warning_message
+    assert "FORBIDDEN" not in warning_message
 
     # Sensitive data should NOT be in warning logs
     assert sensitive_account_number not in warning_message

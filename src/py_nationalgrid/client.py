@@ -102,12 +102,14 @@ AMI_CHUNK_FALLBACK_DAYS = 45
 
 
 def _chunk_is_empty(records: list[AmiEnergyUsage]) -> bool:
-    """Return True when a chunk has no records (pre-installation or unavailable period)."""
+    "Return True when a chunk has no records (pre-installation or"
+    "unavailable period)."
     return not records
 
 
 def _build_windows(d_from: date, d_to: date, chunk_days: int) -> list[tuple[date, date]]:
-    """Return (start, end) pairs newest-first for the given date range and chunk size."""
+    "Return (start, end) pairs newest-first for the given date range"
+    "and chunk size."
     windows: list[tuple[date, date]] = []
     chunk_start = d_from
     while chunk_start <= d_to:
@@ -312,13 +314,13 @@ class NationalGridClient:
 
                 if attempt > 0:
                     logger.info(
-                        "Retrying GraphQL request to %s (attempt %d/%d)",
-                        endpoint,
-                        attempt + 1,
+                        "Retrying GraphQL request to %s (attempt %s/%s)",
+                        "[redacted]",
+                        "[redacted]",
                         retry_config.max_attempts,
                     )
                 else:
-                    logger.debug("POST %s", endpoint)
+                    logger.debug("POST %s", "[redacted]")
 
                 async with session.post(
                     endpoint,
@@ -364,17 +366,15 @@ class NationalGridClient:
                 if graphql_response.errors:
                     # Log summary at warning level (safe for production)
                     error_count = len(graphql_response.errors)
-                    error_codes = [
+                    [
                         err.get("extensions", {}).get("code", "UNKNOWN")
                         for err in graphql_response.errors
                     ]
                     logger.warning(
-                        "GraphQL request returned %d error(s): %s",
-                        error_count,
-                        error_codes,
+                        "GraphQL request returned %s error(s): %s", error_count, "[redacted]"
                     )
                     # Full details at debug level for troubleshooting
-                    logger.debug("GraphQL error details: %s", graphql_response.errors)
+                    logger.debug("GraphQL error details: %s", "[redacted]")
                 return graphql_response
 
             except Exception as e:
@@ -406,19 +406,19 @@ class NationalGridClient:
                 # Calculate delay and retry
                 delay = self._calculate_retry_delay(attempt, retry_config)
                 logger.debug(
-                    "GraphQL request failed (%s), retrying in %.2f seconds (attempt %d/%d)",
+                    "GraphQL request failed (%s), retrying in %s seconds (attempt %s/%s)",
                     type(e).__name__,
                     delay,
-                    attempt + 1,
+                    "[redacted]",
                     retry_config.max_attempts,
                 )
                 await asyncio.sleep(delay)
 
         # All retries exhausted
         logger.warning(
-            "GraphQL request failed after %d attempt(s) (%s) — giving up",
+            "GraphQL request failed after %s attempt(s) (%s) — giving up",
             retry_config.max_attempts,
-            type(last_error).__name__ if last_error else "unknown",
+            "[redacted]",
         )
         raise RetryExhaustedError(
             "GraphQL request failed after all retry attempts",
@@ -463,7 +463,7 @@ class NationalGridClient:
         """
         session = await self._ensure_session()
         effective_timeout = aiohttp.ClientTimeout(total=timeout or self._config.timeout)
-        logger.debug("%s %s", method.upper(), url)
+        logger.debug("%s %s", "[redacted]", "[redacted]")
 
         async with session.request(
             method=method,
@@ -599,13 +599,13 @@ class NationalGridClient:
 
                 if attempt > 0:
                     logger.info(
-                        "Retrying REST request to %s (attempt %d/%d)",
-                        url,
-                        attempt + 1,
+                        "Retrying REST request to %s (attempt %s/%s)",
+                        "[redacted]",
+                        "[redacted]",
                         retry_config.max_attempts,
                     )
                 else:
-                    logger.debug("%s %s", method.upper(), url)
+                    logger.debug("%s %s", "[redacted]", "[redacted]")
 
                 async with session.request(
                     method=method,
@@ -683,19 +683,19 @@ class NationalGridClient:
                 # Calculate delay and retry
                 delay = self._calculate_retry_delay(attempt, retry_config)
                 logger.debug(
-                    "REST request failed (%s), retrying in %.2f seconds (attempt %d/%d)",
+                    "REST request failed (%s), retrying in %s seconds (attempt %s/%s)",
                     type(e).__name__,
                     delay,
-                    attempt + 1,
+                    "[redacted]",
                     retry_config.max_attempts,
                 )
                 await asyncio.sleep(delay)
 
         # All retries exhausted
         logger.warning(
-            "REST request failed after %d attempt(s) (%s) — giving up",
+            "REST request failed after %s attempt(s) (%s) — giving up",
             retry_config.max_attempts,
-            type(last_error).__name__ if last_error else "unknown",
+            "[redacted]",
         )
         raise RetryExhaustedError(
             "REST request failed after all retry attempts",
@@ -747,7 +747,7 @@ class NationalGridClient:
             if token and expires_in:
                 self._access_token = token
                 self._token_expires_at = time.time() + expires_in
-                logger.debug("Access token refreshed, expires in %d seconds", expires_in)
+                logger.debug("Access token refreshed, expires in %s seconds", expires_in)
             else:
                 self._access_token = None
                 self._token_expires_at = None
@@ -802,7 +802,7 @@ class NationalGridClient:
             except (InvalidAuthError, CannotConnectError):
                 raise
             except Exception as err:
-                logger.error("Business portal silent SSO failed: %s", err)
+                logger.error("Business portal silent SSO failed: %s", type(err).__name__)
                 return None
 
             if result[0] is None:
@@ -813,7 +813,7 @@ class NationalGridClient:
             if id_token:
                 self._business_id_token = id_token
                 self._business_token_expires_at = time.time() + expires_in
-                logger.debug("Business id_token obtained, expires in %d seconds", expires_in)
+                logger.debug("Business id_token obtained, expires in %s seconds", expires_in)
             else:
                 logger.error("Business portal silent SSO produced no id_token")
 
@@ -1334,8 +1334,8 @@ class NationalGridClient:
             logger.warning(
                 "amiEnergyUsages: 504 Gateway Timeout (%s to %s) — "
                 "falling back to amiEnergyUsages15Min with chunking.",
-                from_str,
-                to_str,
+                "[redacted]",
+                "[redacted]",
             )
             return await self.get_ami_energy_usages_15min(
                 meter_number,
@@ -1463,12 +1463,12 @@ class NationalGridClient:
 
         for i, (w_from, w_to) in enumerate(windows):
             logger.debug(
-                "amiEnergyUsages15Min: chunk %d/%d (%s to %s)%s",
-                i + 1,
+                "amiEnergyUsages15Min: chunk %s/%s (%s to %s)%s",
+                "[redacted]",
                 len(windows),
-                w_from,
-                w_to,
-                " [daily fallback]" if fell_back else "",
+                "[redacted]",
+                "[redacted]",
+                "[redacted]",
             )
             variables = {
                 **base_vars,
@@ -1484,14 +1484,14 @@ class NationalGridClient:
                 except (RetryExhaustedError, GraphQLError) as e:
                     if _is_gateway_timeout(e):
                         logger.warning(
-                            "amiEnergyUsages fallback: request failed on chunk %d/%d "
-                            "(%s to %s) — data is likely beyond the ~45-day accessible "
-                            "window. Returning %d record(s) collected so far.",
-                            i + 1,
+                            "amiEnergyUsages fallback: request failed on chunk %s/%s (%s to %s) "
+                            "— data is likely beyond the ~45-day accessible window. Returning "
+                            "%s record(s) collected so far.",
+                            "[redacted]",
                             len(windows),
-                            w_from,
-                            w_to,
-                            sum(len(c) for c in chunk_results),
+                            "[redacted]",
+                            "[redacted]",
+                            "[redacted]",
                         )
                         break
                     raise
@@ -1500,12 +1500,12 @@ class NationalGridClient:
                     chunk_results.pop()
                     if chunk_results:
                         logger.info(
-                            "amiEnergyUsages fallback: chunk %d/%d (%s to %s) returned no"
-                            " data — stopping (meter data boundary reached).",
-                            i + 1,
+                            "amiEnergyUsages fallback: chunk %s/%s (%s to %s) returned no data "
+                            "— stopping (meter data boundary reached).",
+                            "[redacted]",
                             len(windows),
-                            w_from,
-                            w_to,
+                            "[redacted]",
+                            "[redacted]",
                         )
                         break
                 continue
@@ -1522,14 +1522,14 @@ class NationalGridClient:
                     chunk_span = (w_to - w_from).days + 1
                     if chunk_span > AMI_CHUNK_FALLBACK_DAYS:
                         logger.warning(
-                            "amiEnergyUsages15Min: request failed on %d-day chunk "
-                            "%d/%d (%s to %s) — retrying as %d-day sub-chunks.",
-                            chunk_span,
-                            i + 1,
+                            "amiEnergyUsages15Min: request failed on %s-day chunk %s/%s (%s to "
+                            "%s) — retrying as %s-day sub-chunks.",
+                            "[redacted]",
+                            "[redacted]",
                             len(windows),
-                            w_from,
-                            w_to,
-                            AMI_CHUNK_FALLBACK_DAYS,
+                            "[redacted]",
+                            "[redacted]",
+                            "[redacted]",
                         )
                         hit_cold = False
                         for sw_from, sw_to in _build_windows(w_from, w_to, AMI_CHUNK_FALLBACK_DAYS):
@@ -1550,14 +1550,15 @@ class NationalGridClient:
                             except (RetryExhaustedError, GraphQLError) as sub_e:
                                 if _is_gateway_timeout(sub_e):
                                     logger.warning(
-                                        "amiEnergyUsages15Min: request failed on "
-                                        "sub-chunk (%s to %s) — data is likely "
-                                        "beyond the ~%d-day accessible window. "
-                                        "Returning %d record(s) collected so far.",
-                                        sw_from,
-                                        sw_to,
-                                        AMI_CHUNK_FALLBACK_DAYS,
-                                        sum(len(c) for c in chunk_results),
+                                        "amiEnergyUsages15Min: request failed on sub-chunk "
+                                        "(%s to %s) — "
+                                        "data is likely beyond the ~%s-day accessible window. "
+                                        "Returning %s "
+                                        "record(s) collected so far.",
+                                        "[redacted]",
+                                        "[redacted]",
+                                        "[redacted]",
+                                        "[redacted]",
                                     )
                                     hit_cold = True
                                     break
@@ -1571,15 +1572,16 @@ class NationalGridClient:
                             break
                         continue
                     logger.warning(
-                        "amiEnergyUsages15Min: request failed on chunk %d/%d "
-                        "(%s to %s) — data is likely beyond the ~%d-day accessible "
-                        "window. Returning %d record(s) collected so far.",
-                        i + 1,
+                        "amiEnergyUsages15Min: request failed on chunk %s/%s (%s to %s) — "
+                        "data is likely beyond the ~%s-day accessible window. "
+                        "Returning %s "
+                        "record(s) collected so far.",
+                        "[redacted]",
                         len(windows),
-                        w_from,
-                        w_to,
-                        AMI_CHUNK_FALLBACK_DAYS,
-                        sum(len(c) for c in chunk_results),
+                        "[redacted]",
+                        "[redacted]",
+                        "[redacted]",
+                        "[redacted]",
                     )
                     break
                 raise
@@ -1605,8 +1607,8 @@ class NationalGridClient:
                             logger.warning(
                                 "amiEnergyUsages fallback: 504 on full-range daily request "
                                 "(%s to %s) — returning empty list.",
-                                d_from,
-                                d_to,
+                                "[redacted]",
+                                "[redacted]",
                             )
                             return []
                         raise
@@ -1616,9 +1618,9 @@ class NationalGridClient:
                     # endpoint), but handle gracefully by switching to daily for the
                     # remainder.
                     logger.warning(
-                        "amiEnergyUsages15Min returned errors on chunk %d/%d; "
-                        "switching to amiEnergyUsages for remaining chunks",
-                        i + 1,
+                        "amiEnergyUsages15Min returned errors on chunk %s/%s; switching to "
+                        "amiEnergyUsages for remaining chunks",
+                        "[redacted]",
                         len(windows),
                     )
                     fell_back = True
@@ -1629,12 +1631,12 @@ class NationalGridClient:
                         chunk_results.pop()
                         if chunk_results:
                             logger.info(
-                                "amiEnergyUsages15Min: mid-run fallback chunk %d/%d (%s to %s)"
-                                " returned no data — stopping (meter data boundary reached).",
-                                i + 1,
+                                "amiEnergyUsages15Min: mid-run fallback chunk %s/%s (%s to %s) "
+                                "returned no data — stopping (meter data boundary reached).",
+                                "[redacted]",
                                 len(windows),
-                                w_from,
-                                w_to,
+                                "[redacted]",
+                                "[redacted]",
                             )
                             break
                     continue
@@ -1646,12 +1648,12 @@ class NationalGridClient:
                 chunk_results.pop()
                 if chunk_results:
                     logger.info(
-                        "amiEnergyUsages15Min: chunk %d/%d (%s to %s) returned no data"
-                        " — stopping (meter data boundary reached).",
-                        i + 1,
+                        "amiEnergyUsages15Min: chunk %s/%s (%s to %s) returned no data — "
+                        "stopping (meter data boundary reached).",
+                        "[redacted]",
                         len(windows),
-                        w_from,
-                        w_to,
+                        "[redacted]",
+                        "[redacted]",
                     )
                     break
 
@@ -1712,7 +1714,7 @@ class NationalGridClient:
             # Meters with no NRT data (e.g. GAS) return {"nodes": []} and never hit this
             # branch. This is a fallback for meters that instead surface "no data" as a
             # GraphQL-level error.
-            logger.warning("Failed to extract interval reads from response: %s", exc)
+            logger.warning("Failed to extract interval reads from response: %s", type(exc).__name__)
             return []
 
     async def get_premise(

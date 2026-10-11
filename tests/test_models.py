@@ -70,28 +70,28 @@ class TestExtractLinkedAccounts:
         """Raises DataExtractionError when data is null."""
         response = GraphQLResponse(data=None)
 
-        with pytest.raises(DataExtractionError, match="Response data is null"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_linked_accounts(response)
 
     def test_raises_on_missing_user(self) -> None:
         """Raises DataExtractionError when user field is missing."""
         response = GraphQLResponse(data={"other": "value"})
 
-        with pytest.raises(DataExtractionError, match="Missing 'user' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_linked_accounts(response)
 
     def test_raises_on_missing_account_links(self) -> None:
         """Raises DataExtractionError when accountLinks is missing."""
         response = GraphQLResponse(data={"user": {"other": "value"}})
 
-        with pytest.raises(DataExtractionError, match="Missing 'accountLinks' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_linked_accounts(response)
 
     def test_raises_on_missing_nodes(self) -> None:
         """Raises DataExtractionError when nodes is missing."""
         response = GraphQLResponse(data={"user": {"accountLinks": {"totalCount": 0}}})
 
-        with pytest.raises(DataExtractionError, match="Missing 'nodes' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_linked_accounts(response)
 
 
@@ -153,14 +153,14 @@ class TestExtractBillingAccount:
         """Raises DataExtractionError when data is null."""
         response = GraphQLResponse(data=None)
 
-        with pytest.raises(DataExtractionError, match="Response data is null"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_billing_account(response)
 
     def test_raises_on_missing_billing_account(self) -> None:
         """Raises DataExtractionError when billingAccount is missing."""
         response = GraphQLResponse(data={"other": "value"})
 
-        with pytest.raises(DataExtractionError, match="Missing 'billingAccount' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_billing_account(response)
 
 
@@ -209,21 +209,21 @@ class TestExtractEnergyUsageCosts:
         """Raises DataExtractionError when data is null."""
         response = GraphQLResponse(data=None)
 
-        with pytest.raises(DataExtractionError, match="Response data is null"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usage_costs(response)
 
     def test_raises_on_missing_energy_usage_costs(self) -> None:
         """Raises DataExtractionError when energyUsageCosts is missing."""
         response = GraphQLResponse(data={"other": "value"})
 
-        with pytest.raises(DataExtractionError, match="Missing 'energyUsageCosts' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usage_costs(response)
 
     def test_raises_on_missing_nodes(self) -> None:
         """Raises DataExtractionError when nodes is missing."""
         response = GraphQLResponse(data={"energyUsageCosts": {}})
 
-        with pytest.raises(DataExtractionError, match="Missing 'nodes' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usage_costs(response)
 
 
@@ -262,21 +262,21 @@ class TestExtractEnergyUsages:
         """Raises DataExtractionError when data is null."""
         response = GraphQLResponse(data=None)
 
-        with pytest.raises(DataExtractionError, match="Response data is null"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usages(response)
 
     def test_raises_on_missing_energy_usages(self) -> None:
         """Raises DataExtractionError when energyUsages is missing."""
         response = GraphQLResponse(data={"other": "value"})
 
-        with pytest.raises(DataExtractionError, match="Missing 'energyUsages' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usages(response)
 
     def test_raises_on_missing_nodes(self) -> None:
         """Raises DataExtractionError when nodes is missing."""
         response = GraphQLResponse(data={"energyUsages": {}})
 
-        with pytest.raises(DataExtractionError, match="Missing 'nodes' field"):
+        with pytest.raises(DataExtractionError, match="DataExtractionError"):
             extract_energy_usages(response)
 
 
@@ -310,4 +310,5 @@ class TestDataExtractionErrorAttributes:
             extract_linked_accounts(response)
 
         error_str = str(exc_info.value)
-        assert "Path: data.user.accountLinks" in error_str
+        assert error_str == "DataExtractionError"
+        assert exc_info.value.path == "data.user.accountLinks"

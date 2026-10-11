@@ -1,0 +1,22 @@
+# Privacy hardening fork
+
+Based on upstream v0.6.6, commit 554e4b93ec07a87caa2de4487d43d6705081490a.
+
+This fork omits request URLs, authentication redirect locations, backend error
+payloads and raw exception details from logging, including debug logging.
+Configuration repr excludes credentials, subscription keys and custom headers.
+Structured exception strings show categories, HTTP status and retry counts;
+query, URL, variables, response and original exception attributes remain available
+for callers that need them, and must not be serialized or logged publicly.
+
+Public API methods, verified TLS, PKCE, token refresh and retry behavior are unchanged.
+Unsigned access-token decoding only extracts a subject from a token received over
+verified TLS; it does not authorize a request. ID-token verification remains enabled.
+
+Tests: run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p pytest_asyncio.plugin
+-p pytest_cov.plugin`. The privacy tests exercise redirect codes, backend errors,
+configuration repr and error summaries with synthetic sensitive values.
+
+Build with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PY_NATIONALGRID=0.6.6.post1 python
+-m build --wheel`. The GitHub release wheel is pinned by URL and SHA-256 in the
+Home Assistant integration fork. Updates require a new reviewed release and hash.

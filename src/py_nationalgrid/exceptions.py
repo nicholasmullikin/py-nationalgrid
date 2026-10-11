@@ -48,21 +48,8 @@ class GraphQLError(NationalGridError):
         self.original_error = original_error
 
     def __str__(self) -> str:
-        """Return detailed error representation."""
-        parts = [super().__str__()]
-        parts.append(f"Endpoint: {self.endpoint}")
-        if self.status is not None:
-            parts.append(f"Status: {self.status}")
-        if self.query:
-            # Truncate long queries
-            query_preview = self.query[:200] + "..." if len(self.query) > 200 else self.query
-            parts.append(f"Query: {query_preview}")
-        if self.variables:
-            redacted = {k: "***" for k in self.variables}
-            parts.append(f"Variables: {redacted}")
-        if self.original_error:
-            parts.append(f"Caused by: {type(self.original_error).__name__}: {self.original_error}")
-        return "\n".join(parts)
+        """Return a safe summary; context remains available as attributes."""
+        return "GraphQLError" + (f" (HTTP {self.status})" if self.status is not None else "")
 
 
 class RestAPIError(NationalGridError):
@@ -95,16 +82,8 @@ class RestAPIError(NationalGridError):
         self.original_error = original_error
 
     def __str__(self) -> str:
-        """Return detailed error representation."""
-        parts = [super().__str__()]
-        parts.append(f"Request: {self.method} {self.url}")
-        if self.status is not None:
-            parts.append(f"Status: {self.status}")
-        if self.response_text:
-            parts.append("Response: [redacted]")
-        if self.original_error:
-            parts.append(f"Caused by: {type(self.original_error).__name__}: {self.original_error}")
-        return "\n".join(parts)
+        """Return a safe summary; context remains available as attributes."""
+        return "RestAPIError" + (f" (HTTP {self.status})" if self.status is not None else "")
 
 
 class RetryExhaustedError(NationalGridError):
@@ -128,10 +107,8 @@ class RetryExhaustedError(NationalGridError):
         self.last_error = last_error
 
     def __str__(self) -> str:
-        """Return detailed error representation."""
-        return (
-            f"{super().__str__()} (after {self.attempts} attempts)\nLast error: {self.last_error}"
-        )
+        """Return a safe summary; context remains available as attributes."""
+        return f"RetryExhaustedError (after {self.attempts} attempts)"
 
 
 class DataExtractionError(NationalGridError):
@@ -155,11 +132,5 @@ class DataExtractionError(NationalGridError):
         self.response_data = response_data
 
     def __str__(self) -> str:
-        """Return detailed error representation."""
-        parts = [super().__str__()]
-        parts.append(f"Path: {self.path}")
-        if self.response_data is not None:
-            data_str = str(self.response_data)
-            data_preview = data_str[:200] + "..." if len(data_str) > 200 else data_str
-            parts.append(f"Response data: {data_preview}")
-        return "\n".join(parts)
+        """Return a safe summary; context remains available as attributes."""
+        return "DataExtractionError"

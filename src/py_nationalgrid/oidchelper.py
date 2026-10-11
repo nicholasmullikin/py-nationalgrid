@@ -153,8 +153,8 @@ async def async_auth_oidc(
             # or an impossibly large lifetime that would prevent refresh).
             if not isinstance(expires_in, int) or not (60 <= expires_in <= 86400):
                 logger.warning(
-                    "Unexpected expires_in value %r from token endpoint, defaulting to 3600",
-                    expires_in,
+                    "Unexpected expires_in value %s from token endpoint, defaulting to 3600",
+                    type(expires_in).__name__,
                 )
                 expires_in = 3600
             access_token = str(tokens["access_token"])
@@ -171,7 +171,7 @@ async def async_auth_oidc(
         raise CannotConnectError("Failed to obtain access token")
 
     except aiohttp.ClientError as err:
-        logger.exception("Connection error during login")
+        logger.error("Connection error during login")
         raise CannotConnectError(f"Connection error: {err}") from err
     finally:
         if owns_session:
@@ -220,7 +220,7 @@ def _extract_sub_from_token(token: str) -> str | None:
         sub = claims.get("sub")
         return str(sub) if sub else None
     except jwt.InvalidTokenError as e:
-        logger.warning("Failed to decode token for sub extraction: %s", e)
+        logger.warning("Failed to decode token for sub extraction: %s", type(e).__name__)
         return None
 
 
@@ -250,7 +250,7 @@ async def _get_config(
             body is empty, or the response contains invalid JSON.
     """
     config_url = f"{base_url}/{tenant_id}/{policy}/v2.0/.well-known/openid-configuration"
-    logger.debug("Fetching OAuth configuration from: %s", config_url)
+    logger.debug("Fetching OAuth configuration from: %s", "[redacted]")
     config_text, _, status = await _fetch(session, config_url, timeout)
     if status != 200 or not config_text:
         logger.error("Failed to get configuration. Status: %s", status)
@@ -258,7 +258,7 @@ async def _get_config(
     try:
         config: ConfigDict = json.loads(config_text)
     except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in OpenID configuration response: %s", e)
+        logger.error("Invalid JSON in OpenID configuration response: %s", type(e).__name__)
         raise CannotConnectError(f"Invalid JSON in OpenID configuration response: {e}") from e
     return config
 
@@ -302,11 +302,11 @@ async def _get_auth_silent(
 
     if status not in (301, 302, 303, 307, 308) or not location:
         logger.warning(
-            "Silent auth: expected redirect, got status %d (location=%r)", status, location
+            "Silent auth: expected redirect, got status %s (location=%s)", status, "[redacted]"
         )
         return None, None
 
-    logger.debug("Silent auth redirect location: %s", location[:120])
+    logger.debug("Silent auth redirect location: %s", "[redacted]")
     return _extract_auth_result(location, redirect_uri, config, client_id)
 
 
@@ -448,7 +448,7 @@ async def _get_access(
     try:
         tokens: TokenDict = json.loads(token_content)
     except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in token response: %s", e)
+        logger.error("Invalid JSON in token response: %s", type(e).__name__)
         raise CannotConnectError(f"Invalid JSON in token response: {e}") from e
     return tokens
 
@@ -460,13 +460,13 @@ async def _fetch(
     method = kwargs.pop("method", "GET")
     timeout_obj = aiohttp.ClientTimeout(total=timeout)
     try:
-        logger.debug("Fetching URL: %s, Method: %s", url, method)
+        logger.debug("Fetching URL: %s, Method: %s", "[redacted]", "[redacted]")
         async with session.request(method, url, timeout=timeout_obj, **kwargs) as response:
             content = await response.text()
             logger.debug("Fetch completed. Status: %s", response.status)
             return content, str(response.url), response.status
     except (TimeoutError, aiohttp.ClientError) as err:
-        logger.exception("Network error occurred")
+        logger.error("Network error occurred")
         raise CannotConnectError("Network error occurred") from err
 
 
@@ -498,7 +498,7 @@ def _extract_settings(auth_content: str) -> dict[str, Any] | None:
             logger.debug("Settings extracted via regex")
             return settings
         except json.JSONDecodeError:
-            logger.exception("Failed to parse settings JSON from regex match")
+            logger.error("Failed to parse settings JSON from regex match")
 
     logger.debug(
         "Could not extract settings from authorization content; "
@@ -527,8 +527,7 @@ def _check_b2c_error_response(content: str) -> tuple[str, str] | None:
             globalex_text = "{" + globalex_match.group(1) + "}"
             globalex = json.loads(globalex_text)
             detail = globalex.get("Detail", "Unknown error")
-            correlation_id = globalex.get("CorrelationId", "")
-            logger.debug("B2C error detected. CorrelationId: %s", correlation_id)
+            logger.debug("B2C error detected. CorrelationId: %s", "[redacted]")
             return ("B2C_EXCEPTION", detail)
         except json.JSONDecodeError:
             pass
@@ -571,7 +570,7 @@ async def _post_credentials(
 ) -> None:
     """Post credentials to the server."""
     base_url = issuer.rsplit("/", 2)[0]
-    logger.debug("Posting credentials to %s", base_url)
+    logger.debug("Posting credentials to %s", "[redacted]")
     response_content, _, status = await _fetch(
         session,
         f"{base_url}/{policy}/{self_asserted_endpoint}",
@@ -595,7 +594,7 @@ async def _post_credentials(
         error_info = _check_b2c_error_response(response_content)
         if error_info:
             error_type, error_detail = error_info
-            logger.error("B2C authentication error: %s - %s", error_type, error_detail)
+            logger.error("B2C authentication error: %s - %s", "[redacted]", "[redacted]")
             if "password" in error_detail.lower() or "credential" in error_detail.lower():
                 raise InvalidAuthError(f"Invalid username or password: {error_detail}")
             raise CannotConnectError(f"Authentication failed: {error_detail}")
@@ -616,7 +615,7 @@ async def _confirm_signin(
 ) -> tuple[str | None, str | None]:
     """Confirm the sign-in process."""
     base_url = issuer.rsplit("/", 2)[0]
-    logger.debug("Confirming sign-in at %s", base_url)
+    logger.debug("Confirming sign-in at %s", "[redacted]")
     _, final_url, status = await _fetch(
         session,
         f"{base_url}/{policy}/{policy_confirm_endpoint}",
@@ -641,11 +640,7 @@ async def _confirm_signin(
         else:
             parsed_params = _parse_redirect_params(final_url)
             if "error" in parsed_params:
-                logger.error(
-                    "Sign-in failed with error: %s, %s",
-                    parsed_params.get("error"),
-                    parsed_params.get("error_description"),
-                )
+                logger.error("Sign-in failed with error: %s, %s", "[redacted]", "[redacted]")
                 raise InvalidAuthError("Sign-in failed")
             logger.warning("Sign-in confirmed, but no authorization code found")
         return auth_code, sub_value
@@ -688,7 +683,7 @@ def _parse_redirect_params(final_url: str) -> dict[str, list[str]]:
 def _extract_sub_from_id_token(
     id_token: str | None, config: ConfigDict, client_id: str
 ) -> str | None:
-    """Extract and verify the sub claim from an id_token with proper signature validation."""
+    """Extract and verify the sub claim from an id_token."""
     if not id_token:
         return None
 
@@ -723,8 +718,8 @@ def _extract_sub_from_id_token(
         logger.error("id_token has expired")
         return None
     except jwt.InvalidTokenError as e:
-        logger.error("id_token validation failed: %s", e)
+        logger.error("id_token validation failed: %s", type(e).__name__)
         return None
     except Exception as e:
-        logger.exception("Unexpected error validating id_token: %s", e)
+        logger.error("Unexpected error validating id_token: %s", type(e).__name__)
         return None

@@ -328,7 +328,7 @@ async def test_typed_method_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'accountLinks' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_linked_accounts()
 
 
@@ -479,7 +479,7 @@ async def test_get_ami_energy_usages_15min_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'amiEnergyUsages15Min' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_ami_energy_usages_15min(
             meter_number="M-001",
             premise_number="PREM-001",
@@ -1281,7 +1281,7 @@ async def test_get_ami_energy_usages_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'amiEnergyUsages' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_ami_energy_usages(
             meter_number="M-001",
             premise_number="PREM-001",
@@ -1510,7 +1510,7 @@ async def test_get_bills_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'bills' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_bills("acct-001")
 
 
@@ -1598,7 +1598,7 @@ async def test_get_payment_history_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'payments' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_payment_history("acct-001")
 
 
@@ -1760,7 +1760,7 @@ async def test_get_account_dashboard_raises_when_no_account_links(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="No account links found"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_account_dashboard("acct-001")
 
 
@@ -2039,7 +2039,7 @@ async def test_get_payment_plans_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'paymentPlans' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_payment_plans("acct-001")
 
 
@@ -2137,7 +2137,7 @@ async def test_get_collection_arrangements_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'collectionArrangements' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_collection_arrangements("acct-001")
 
 
@@ -2269,7 +2269,7 @@ async def test_get_premise_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'premise' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_premise(
             city="Anytown", state="NY", street_name="1 Example Road", zip_code="12345"
         )

@@ -27,10 +27,10 @@ class NationalGridConfig:
 
     endpoint: str = DEFAULT_ENDPOINT
     rest_base_url: str = "https://myaccount.nationalgrid.com/api"
-    username: str | None = None
-    password: str | None = None
-    subscription_key: str = "e674f89d7ed9417194de894b701333dd"
-    default_headers: Mapping[str, str] = field(default_factory=dict)
+    username: str | None = field(default=None, repr=False)
+    password: str | None = field(default=None, repr=False)
+    subscription_key: str = field(default="e674f89d7ed9417194de894b701333dd", repr=False)
+    default_headers: Mapping[str, str] = field(default_factory=dict, repr=False)
     timeout: float = DEFAULT_TIMEOUT
     verify_ssl: bool = True
     retry_config: RetryConfig = field(default_factory=RetryConfig)

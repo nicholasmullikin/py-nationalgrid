@@ -134,7 +134,7 @@ def test_retry_exhausted_str() -> None:
     err = RetryExhaustedError("all retries failed", attempts=3, last_error=ValueError("root"))
     s = str(err)
     assert "3" in s
-    assert "root" in s
+    assert "root" not in s
 
 
 # ---------------------------------------------------------------------------
@@ -165,67 +165,67 @@ def test_normalize_variable_definitions_none() -> None:
 
 def test_extract_ami_energy_usages_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_ami_energy_usages(response)
 
 
 def test_extract_ami_energy_usages_nodes_none() -> None:
     response = GraphQLResponse(data={"amiEnergyUsages": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_ami_energy_usages(response)
 
 
 def test_extract_bills_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_bills(response)
 
 
 def test_extract_bills_nodes_none() -> None:
     response = GraphQLResponse(data={"bills": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_bills(response)
 
 
 def test_extract_payments_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_payments(response)
 
 
 def test_extract_payments_nodes_none() -> None:
     response = GraphQLResponse(data={"payments": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_payments(response)
 
 
 def test_extract_nrt_energy_usages_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_nrt_energy_usages(response)
 
 
 def test_extract_nrt_energy_usages_nodes_none() -> None:
     response = GraphQLResponse(data={"nrtEnergyUsages": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_nrt_energy_usages(response)
 
 
 def test_extract_account_dashboard_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_account_dashboard(response)
 
 
 def test_extract_account_dashboard_missing_user() -> None:
     response = GraphQLResponse(data={})
-    with pytest.raises(DataExtractionError, match="Missing 'user' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_account_dashboard(response)
 
 
 def test_extract_account_dashboard_no_account_links() -> None:
     response = GraphQLResponse(data={"user": {"accountLinks": {"nodes": []}}})
-    with pytest.raises(DataExtractionError, match="No account links found"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_account_dashboard(response)
 
 
@@ -233,13 +233,13 @@ def test_extract_account_dashboard_missing_billing_account() -> None:
     response = GraphQLResponse(
         data={"user": {"accountLinks": {"nodes": [{"billingAccount": None}]}}}
     )
-    with pytest.raises(DataExtractionError, match="Missing 'billingAccount' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_account_dashboard(response)
 
 
 def test_extract_meter_reading_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_meter_reading(response)
 
 
@@ -250,7 +250,7 @@ def test_extract_meter_reading_returns_none_when_absent() -> None:
 
 def test_extract_paperless_billing_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_paperless_billing(response)
 
 
@@ -261,7 +261,7 @@ def test_extract_paperless_billing_returns_none_when_absent() -> None:
 
 def test_extract_balanced_billing_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_balanced_billing(response)
 
 
@@ -272,37 +272,37 @@ def test_extract_balanced_billing_returns_none_when_absent() -> None:
 
 def test_extract_payment_plans_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_payment_plans(response)
 
 
 def test_extract_payment_plans_missing_field() -> None:
     response = GraphQLResponse(data={})
-    with pytest.raises(DataExtractionError, match="Missing 'paymentPlans' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_payment_plans(response)
 
 
 def test_extract_payment_plans_nodes_none() -> None:
     response = GraphQLResponse(data={"paymentPlans": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_payment_plans(response)
 
 
 def test_extract_collection_arrangements_data_none() -> None:
     response = GraphQLResponse(data=None)
-    with pytest.raises(DataExtractionError, match="data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_collection_arrangements(response)
 
 
 def test_extract_collection_arrangements_missing_field() -> None:
     response = GraphQLResponse(data={})
-    with pytest.raises(DataExtractionError, match="Missing 'collectionArrangements' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_collection_arrangements(response)
 
 
 def test_extract_collection_arrangements_nodes_none() -> None:
     response = GraphQLResponse(data={"collectionArrangements": {}})
-    with pytest.raises(DataExtractionError, match="nodes"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_collection_arrangements(response)
 
 
@@ -836,7 +836,7 @@ async def test_15min_fell_back_non_504_exception_propagates() -> None:
 
     client.execute = _mock_execute  # type: ignore[method-assign]
 
-    with pytest.raises(GraphQLError, match="server error"):
+    with pytest.raises(GraphQLError, match="GraphQLError"):
         await client.get_ami_energy_usages_15min(**common_kwargs)
 
 
@@ -876,7 +876,7 @@ async def test_15min_subchunk_non_504_exception_propagates() -> None:
 
     client.execute = _mock_execute  # type: ignore[method-assign]
 
-    with pytest.raises(GraphQLError, match="server error"):
+    with pytest.raises(GraphQLError, match="GraphQLError"):
         await client.get_ami_energy_usages_15min(
             meter_number="M1",
             premise_number="P1",
@@ -976,7 +976,7 @@ async def test_15min_first_chunk_daily_fallback_non_504_propagates() -> None:
 
     client.execute = _mock_execute  # type: ignore[method-assign]
 
-    with pytest.raises(GraphQLError, match="internal error"):
+    with pytest.raises(GraphQLError, match="GraphQLError"):
         await client.get_ami_energy_usages_15min(
             meter_number="M1",
             premise_number="P1",
@@ -1037,19 +1037,19 @@ def test_extract_premise_returns_empty_list() -> None:
 
 def test_extract_premise_raises_on_missing_premise_field() -> None:
     response = GraphQLResponse(data={}, errors=None)
-    with pytest.raises(DataExtractionError, match="Missing 'premise' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_premise(response)
 
 
 def test_extract_premise_raises_on_missing_nodes_field() -> None:
     response = GraphQLResponse(data={"premise": {}}, errors=None)
-    with pytest.raises(DataExtractionError, match="Missing 'nodes' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_premise(response)
 
 
 def test_extract_premise_raises_on_null_data() -> None:
     response = GraphQLResponse(data=None, errors=None)
-    with pytest.raises(DataExtractionError, match="Response data is null"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_premise(response)
 
 
@@ -1072,7 +1072,7 @@ def test_extract_electric_bill_history_returns_empty_on_204() -> None:
 
 def test_extract_electric_bill_history_raises_on_non_list() -> None:
     response = RestResponse(status=200, headers={}, data={"error": "bad"})
-    with pytest.raises(DataExtractionError, match="Expected list of electric bill records"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_electric_bill_history(response)
 
 
@@ -1095,19 +1095,19 @@ def test_extract_gas_bill_history_returns_empty_on_204() -> None:
 
 def test_extract_gas_bill_history_raises_on_non_list() -> None:
     response = RestResponse(status=200, headers={}, data={"error": "bad"})
-    with pytest.raises(DataExtractionError, match="Expected list of gas bill records"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_gas_bill_history(response)
 
 
 def test_extract_electric_bill_history_raises_when_inner_value_not_list() -> None:
     response = RestResponse(status=200, headers={}, data={"electricBillHistory": "bad"})
-    with pytest.raises(DataExtractionError, match="Expected list of electric bill records"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_electric_bill_history(response)
 
 
 def test_extract_gas_bill_history_raises_when_inner_value_not_list() -> None:
     response = RestResponse(status=200, headers={}, data={"gasBillHistory": 42})
-    with pytest.raises(DataExtractionError, match="Expected list of gas bill records"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         extract_gas_bill_history(response)
 
 

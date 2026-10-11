@@ -182,7 +182,7 @@ async def test_get_interval_reads_raises_data_extraction_error(
 
     client = NationalGridClient(config=config, session=mock_session)
 
-    with pytest.raises(DataExtractionError, match="Missing 'nrtEnergyUsages' field"):
+    with pytest.raises(DataExtractionError, match="DataExtractionError"):
         await client.get_interval_reads(
             premise_number="12345",
             service_point_number="67890",
