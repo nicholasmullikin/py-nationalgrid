@@ -558,6 +558,24 @@ def _check_b2c_error_response(content: str) -> tuple[str, str] | None:
     return None
 
 
+def _form_endpoint(issuer: str, settings: dict[str, Any], policy: str, endpoint: str) -> str:
+    """Use the form's tenant path, keeping requests on the verified issuer host."""
+    tenant_path = settings.get("hosts", {}).get("tenant")
+    if tenant_path is not None:
+        parsed = urlparse(tenant_path)
+        if (
+            not tenant_path.startswith("/")
+            or tenant_path.startswith("//")
+            or parsed.netloc
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise CannotConnectError("Invalid authentication form tenant path")
+        origin = urlparse(issuer)
+        return f"{origin.scheme}://{origin.netloc}{tenant_path.rstrip('/')}/{endpoint}"
+    return f"{issuer.rsplit('/', 2)[0]}/{policy}/{endpoint}"
+
+
 async def _post_credentials(
     session: aiohttp.ClientSession,
     issuer: str,
@@ -569,19 +587,18 @@ async def _post_credentials(
     timeout: float,
 ) -> None:
     """Post credentials to the server."""
-    base_url = issuer.rsplit("/", 2)[0]
     logger.debug("Posting credentials to %s", "[redacted]")
     response_content, _, status = await _fetch(
         session,
-        f"{base_url}/{policy}/{self_asserted_endpoint}",
+        _form_endpoint(issuer, settings, policy, self_asserted_endpoint),
         timeout,
         method="POST",
+        params={"tx": settings["transId"], "p": policy},
         data={
-            "tx": settings["transId"],
-            "p": policy,
             "request_type": "RESPONSE",
             "signInName": username,
             "password": password,
+            "Signin-forgotPassword": "FORGOT_PASSWORD_FALSE",
         },
         headers={"X-CSRF-TOKEN": settings["csrf"]},
     )
@@ -614,11 +631,10 @@ async def _confirm_signin(
     timeout: float,
 ) -> tuple[str | None, str | None]:
     """Confirm the sign-in process."""
-    base_url = issuer.rsplit("/", 2)[0]
     logger.debug("Confirming sign-in at %s", "[redacted]")
     _, final_url, status = await _fetch(
         session,
-        f"{base_url}/{policy}/{policy_confirm_endpoint}",
+        _form_endpoint(issuer, settings, policy, policy_confirm_endpoint),
         timeout,
         params={
             "rememberMe": "false",

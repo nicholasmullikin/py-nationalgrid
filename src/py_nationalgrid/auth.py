@@ -23,15 +23,15 @@ class NationalGridAuth:
         return "America/New_York"
 
     BASE_URL = "https://login.nationalgrid.com"
-    TENANT_ID = "0e1366c5-731c-42b3-90d3-508039d9e70f"
-    POLICY = "B2C_1A_UWP_NationalGrid_convert_merge_signin"
-    CLIENT_ID = "36488660-e86a-4a0d-8316-3df49af8d06d"
+    TENANT_ID = "login.nationalgridus.com"
+    POLICY = "B2C_1A_NationalGrid_convert_merge_signin"
+    CLIENT_ID = "88d004b4-3d39-4599-b410-093849907ee5"
     REDIRECT_URI = "https://myaccount.nationalgrid.com/auth-landing"
     APPLICATION_URI = f"{BASE_URL}/"
-    SCOPE_AUTH = "openid profile offline_access"
+    SCOPE_AUTH = f"{CLIENT_ID} openid profile offline_access"
     SCOPE_ACCESS = f"{CLIENT_ID} openid profile offline_access"
     SELF_ASSERTED_ENDPOINT = "SelfAsserted"
-    POLICY_CONFIRM_ENDPOINT = "api/CombinedSigninAndSignup/confirmed"
+    POLICY_CONFIRM_ENDPOINT = "api/SelfAsserted/confirmed"
 
     async def async_login(
         self,
@@ -92,13 +92,13 @@ class NationalGridBusinessAuth:
 
     BASE_URL = NationalGridAuth.BASE_URL
     TENANT_ID = "loginnationalgridus.onmicrosoft.com"
-    POLICY = NationalGridAuth.POLICY
+    POLICY = "B2C_1A_UWP_NationalGrid_convert_merge_signin"
     CLIENT_ID = "a26ad492-5d24-49f0-a4f7-d79e3a2bb1ef"
     REDIRECT_URI = "https://accountmanager.nationalgrid.com/mybusinessaccount"
     SCOPE_AUTH = "openid profile offline_access"
     SCOPE_ACCESS = "https://login.nationalgridus.com/uwp2.0/api.read openid profile offline_access"
     SELF_ASSERTED_ENDPOINT = NationalGridAuth.SELF_ASSERTED_ENDPOINT
-    POLICY_CONFIRM_ENDPOINT = NationalGridAuth.POLICY_CONFIRM_ENDPOINT
+    POLICY_CONFIRM_ENDPOINT = "api/CombinedSigninAndSignup/confirmed"
 
     async def async_login(
         self,
