@@ -2,11 +2,14 @@
 
 from unittest.mock import AsyncMock, patch
 
+import aiohttp
+import httpx
 import pytest
+from yarl import URL
 
 from py_nationalgrid.auth import NationalGridAuth
 from py_nationalgrid.exceptions import CannotConnectError
-from py_nationalgrid.oidchelper import _confirm_signin, _form_endpoint, _post_credentials
+from py_nationalgrid.oidchelper import _confirm_signin, _fetch, _form_endpoint, _post_credentials
 
 ISSUER = "https://login.nationalgrid.com/tenant-id/v2.0/"
 POLICY = NationalGridAuth.POLICY
@@ -44,7 +47,9 @@ async def test_consumer_form_request_and_confirmation():
             "password": "synthetic-password",
             "Signin-forgotPassword": "FORGOT_PASSWORD_FALSE",
         }
-        assert kwargs["headers"] == {"X-CSRF-TOKEN": SETTINGS["csrf"]}
+        assert kwargs["headers"]["X-CSRF-TOKEN"] == SETTINGS["csrf"]
+        assert kwargs["headers"]["Origin"] == "https://login.nationalgrid.com"
+        assert kwargs["headers"]["X-Requested-With"] == "XMLHttpRequest"
         fetch.return_value = ("", NationalGridAuth.REDIRECT_URI + "?code=synthetic-code", 200)
         code, _ = await _confirm_signin(
             session,
@@ -81,3 +86,70 @@ def test_legacy_form_path_without_hosts():
         _form_endpoint(ISSUER, {}, POLICY, "SelfAsserted")
         == f"https://login.nationalgrid.com/tenant-id/{POLICY}/SelfAsserted"
     )
+
+
+@pytest.mark.asyncio
+async def test_oauth_transport_keeps_cookie_domain_path_and_secure_scope():
+    secret = "synthetic-session-secret"
+    observed = []
+    real_client = httpx.AsyncClient
+
+    def handle(request):
+        observed.append(request)
+        if request.url.host == "login.example" and request.url.path == "/auth/start":
+            assert secret in request.headers["cookie"]
+            return httpx.Response(
+                302,
+                headers={
+                    "location": "https://callback.example/landing",
+                    "set-cookie": "new_session=synthetic-new; Path=/auth; Secure; HttpOnly",
+                },
+            )
+        assert "cookie" not in request.headers
+        return httpx.Response(200, text="completed")
+
+    def client(**kwargs):
+        assert kwargs["verify"] is True
+        assert kwargs["trust_env"] is False
+        return real_client(**kwargs, transport=httpx.MockTransport(handle))
+
+    async with aiohttp.ClientSession() as session:
+        from http.cookies import SimpleCookie
+
+        cookies = SimpleCookie()
+        cookies.load(f"private_session={secret}; Path=/auth; Secure; HttpOnly")
+        session.cookie_jar.update_cookies(cookies, URL("https://login.example/auth/start"))
+        with patch("py_nationalgrid.oidchelper.httpx.AsyncClient", side_effect=client):
+            body, final_url, status = await _fetch(session, "https://login.example/auth/start", 30)
+            assert (body, final_url, status) == (
+                "completed",
+                "https://callback.example/landing",
+                200,
+            )
+            await _fetch(session, "http://login.example/auth/plain", 30)
+            await _fetch(session, "https://login.example/outside", 30)
+        assert len(observed) == 4
+        stored = {cookie.key: cookie for cookie in session.cookie_jar}
+        assert stored["new_session"]["domain"] == "login.example"
+        assert stored["new_session"]["secure"]
+        assert stored["new_session"]["path"] == "/auth"
+        assert not session.closed
+
+
+@pytest.mark.asyncio
+async def test_transport_failure_does_not_expose_private_url_or_nested_error(caplog):
+    real_client = httpx.AsyncClient
+
+    def handle(request):
+        raise httpx.ConnectError("synthetic-private-token", request=request)
+
+    def client(**kwargs):
+        return real_client(**kwargs, transport=httpx.MockTransport(handle))
+
+    async with aiohttp.ClientSession() as session:
+        with patch("py_nationalgrid.oidchelper.httpx.AsyncClient", side_effect=client):
+            with pytest.raises(CannotConnectError) as caught:
+                await _fetch(session, "https://login.example/?code=synthetic-private-token", 30)
+    assert "synthetic-private-token" not in str(caught.value)
+    assert "synthetic-private-token" not in caplog.text
+    assert caught.value.__suppress_context__

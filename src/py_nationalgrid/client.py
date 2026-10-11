@@ -40,6 +40,7 @@ from .extractors import (
     extract_premise,
 )
 from .graphql import GraphQLRequest, GraphQLResponse
+from .helpers import create_cookie_jar
 from .models import (
     AccountDashboard,
     AccountLink,
@@ -882,6 +883,7 @@ class NationalGridClient:
             self._session = aiohttp.ClientSession(
                 timeout=timeout,
                 connector=connector,
+                cookie_jar=create_cookie_jar(),
             )
             return self._session
 

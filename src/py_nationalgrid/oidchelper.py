@@ -8,12 +8,16 @@ import logging
 import re
 import secrets
 import ssl
+from http.cookiejar import Cookie
+from http.cookies import SimpleCookie
 from typing import Any, TypedDict
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
+import httpx
 import jwt
 from jwt import PyJWKClient
+from yarl import URL
 
 from .exceptions import CannotConnectError, InvalidAuthError
 from .helpers import create_cookie_jar
@@ -394,6 +398,7 @@ async def _get_auth(
         logger.debug("No settings extracted, checking for direct authorization code")
         return _extract_auth_result(final_url, redirect_uri, config, client_id)
 
+    settings["authorization_url"] = final_url
     logger.debug("Posting credentials")
     await _post_credentials(
         session,
@@ -456,18 +461,52 @@ async def _get_access(
 async def _fetch(
     session: aiohttp.ClientSession, url: str, timeout: float, **kwargs: Any
 ) -> tuple[str | None, str | None, int]:
-    """Fetch data from a URL."""
+    """Use verified HTTPX requests for B2C, sharing scoped cookies with aiohttp."""
     method = kwargs.pop("method", "GET")
-    timeout_obj = aiohttp.ClientTimeout(total=timeout)
+    follow_redirects = kwargs.pop("allow_redirects", True)
+    cookies = httpx.Cookies()
+    for morsel in session.cookie_jar:
+        cookies.jar.set_cookie(
+            Cookie(
+                version=0,
+                name=morsel.key,
+                value=morsel.value,
+                port=None,
+                port_specified=False,
+                domain=morsel["domain"],
+                domain_specified=True,
+                domain_initial_dot=morsel["domain"].startswith("."),
+                path=morsel["path"] or "/",
+                path_specified=True,
+                secure=bool(morsel["secure"]),
+                expires=None,
+                discard=True,
+                comment=None,
+                comment_url=None,
+                rest={"HttpOnly": bool(morsel["httponly"])},
+                rfc2109=False,
+            )
+        )
     try:
-        logger.debug("Fetching URL: %s, Method: %s", "[redacted]", "[redacted]")
-        async with session.request(method, url, timeout=timeout_obj, **kwargs) as response:
-            content = await response.text()
-            logger.debug("Fetch completed. Status: %s", response.status)
-            return content, str(response.url), response.status
-    except (TimeoutError, aiohttp.ClientError) as err:
-        logger.error("Network error occurred")
-        raise CannotConnectError("Network error occurred") from err
+        async with httpx.AsyncClient(
+            cookies=cookies,
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            verify=True,
+            trust_env=False,
+        ) as client:
+            response = await client.request(method, url, **kwargs)
+            # Include redirect responses so B2C's SSO cookies remain available.
+            for hop in (*response.history, response):
+                for value in hop.headers.get_list("set-cookie"):
+                    updated = SimpleCookie()
+                    updated.load(value)
+                    session.cookie_jar.update_cookies(updated, URL(str(hop.url)))
+            logger.debug("Authentication request completed. Status: %s", response.status_code)
+            return response.text, str(response.url), response.status_code
+    except (TimeoutError, httpx.HTTPError):
+        logger.error("Authentication network error")
+        raise CannotConnectError("Authentication network error") from None
 
 
 def _extract_settings(auth_content: str) -> dict[str, Any] | None:
@@ -600,7 +639,15 @@ async def _post_credentials(
             "password": password,
             "Signin-forgotPassword": "FORGOT_PASSWORD_FALSE",
         },
-        headers={"X-CSRF-TOKEN": settings["csrf"]},
+        headers={
+            "X-CSRF-TOKEN": settings["csrf"],
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Origin": f"{urlparse(issuer).scheme}://{urlparse(issuer).netloc}",
+            "Referer": settings.get("authorization_url")
+            or _form_endpoint(issuer, settings, policy, "oauth2/v2.0/authorize"),
+        },
     )
     if status != 200:
         logger.error("Failed to post credentials. Status: %s", status)

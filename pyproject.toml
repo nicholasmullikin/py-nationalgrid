@@ -22,6 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "aiohttp>=3.9",
+    "httpx>=0.28.1,<0.29",
     "pyjwt[crypto]>=2.8.0",
 ]
 
