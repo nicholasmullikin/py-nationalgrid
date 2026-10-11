@@ -8,6 +8,7 @@ Configuration repr excludes credentials, subscription keys and custom headers.
 Structured exception strings show categories, HTTP status and retry counts;
 query, URL, variables, response and original exception attributes remain available
 for callers that need them, and must not be serialized or logged publicly.
+GraphQL response errors raise a fixed public message instead of copying backend payloads.
 
 Public API methods, verified TLS, PKCE, token refresh and retry behavior are unchanged.
 Unsigned access-token decoding only extracts a subject from a token received over
@@ -17,6 +18,6 @@ Tests: run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p pytest_asyncio.
 -p pytest_cov.plugin`. The privacy tests exercise redirect codes, backend errors,
 configuration repr and error summaries with synthetic sensitive values.
 
-Build with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PY_NATIONALGRID=0.6.6.post1 python
+Build with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PY_NATIONALGRID=0.6.6.post2 python
 -m build --wheel`. The GitHub release wheel is pinned by URL and SHA-256 in the
 Home Assistant integration fork. Updates require a new reviewed release and hash.

@@ -49,7 +49,7 @@ class GraphQLResponse:
 
         if not self.errors:
             return
-        raise ValueError(f"GraphQL errors encountered: {self.errors}")
+        raise ValueError("GraphQL errors encountered")
 
 
 def compose_query(operation: str, selection_set: str, *, variables: str | None = None) -> str:

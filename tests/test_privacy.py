@@ -12,6 +12,7 @@ from py_nationalgrid.exceptions import (
     RestAPIError,
     RetryExhaustedError,
 )
+from py_nationalgrid.graphql import GraphQLResponse
 from py_nationalgrid.oidchelper import _get_auth_silent, _post_credentials
 
 SECRET = "synthetic-secret-account-token"
@@ -84,3 +85,13 @@ async def test_auth_redirect_and_backend_error_logs(caplog):
             )
     assert SECRET not in caplog.text
     assert all(record.exc_info is None for record in caplog.records)
+
+
+def test_graphql_backend_errors_stay_out_of_public_exception():
+    errors = [{"message": SECRET, "extensions": {"account": SECRET}}]
+    response = GraphQLResponse(data=None, errors=errors)
+    with pytest.raises(ValueError, match="GraphQL errors encountered") as caught:
+        response.raise_on_errors()
+    assert SECRET not in str(caught.value)
+    assert SECRET not in repr(caught.value)
+    assert response.errors == errors
